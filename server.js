@@ -1,86 +1,56 @@
-const express = require('express');
-const axios = require('axios');
+const express = require("express");
+
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
-const PORT = process.env.PORT || 3000;
 const V0_API_KEY = process.env.V0_API_KEY;
+const PORT = process.env.PORT || 3000;
 
-// 记录请求日志（用于对账）
-const requestLogs = [];
-
-app.post('/v1/chat/completions', async (req, res) => {
-  const startTime = Date.now();
-  const userMessage = req.body.messages.find(m => m.role === 'user')?.content;
-  const model = req.body.model || 'v0-max-fast';
-
-  if (!userMessage) {
-    return res.status(400).json({ error: '请求中未找到用户消息' });
-  }
-
-  try {
-    // 向 v0 API 发送请求
-    const v0Response = await axios.post(
-      'https://api.v0.dev/v1/chats',
+app.get("/v1/models", (req, res) => {
+  res.json({
+    object: "list",
+    data: [
       {
-        message: userMessage,
-        model: model
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${V0_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
+        id: "v0-1.5-md",
+        object: "model",
+        owned_by: "v0"
       }
-    );
-
-    // 记录请求日志
-    const log = {
-      id: Date.now().toString(),
-      model: model,
-      prompt: userMessage,
-      response: v0Response.data.response || '',
-      tokens: v0Response.data.usage?.total_tokens || 0,
-      time: Date.now() - startTime,
-      status: 'success'
-    };
-    requestLogs.push(log);
-
-    // 转换成 OpenAI 格式返回
-    res.json({
-      id: log.id,
-      object: 'chat.completion',
-      created: Math.floor(startTime / 1000),
-      model: model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: 'assistant',
-            content: log.response
-          },
-          finish_reason: 'stop'
-        }
-      ],
-      usage: {
-        prompt_tokens: v0Response.data.usage?.prompt_tokens || 0,
-        completion_tokens: v0Response.data.usage?.completion_tokens || 0,
-        total_tokens: log.tokens
-      }
-    });
-  } catch (error) {
-    console.error('请求错误:', error.response?.data || error.message);
-    res.status(error.response?.status || 500).json({
-      error: error.response?.data || '内部服务器错误'
-    });
-  }
+    ]
+  });
 });
 
-// 提供日志查询接口（可选）
-app.get('/logs', (req, res) => {
-  res.json(requestLogs);
+app.post("/v1/chat/completions", async (req, res) => {
+  try {
+    const body = req.body;
+
+    const response = await fetch("https://api.v0.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${V0_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: body.model || "v0-1.5-md",
+        messages: body.messages || [],
+        stream: false
+      })
+    });
+
+    const text = await response.text();
+
+    res.status(response.status);
+    res.setHeader("Content-Type", "application/json");
+    res.send(text);
+  } catch (err) {
+    res.status(500).json({
+      error: {
+        message: err.message,
+        type: "proxy_error"
+      }
+    });
+  }
 });
 
 app.listen(PORT, () => {
-  console.log(`中转服务已启动，端口：${PORT}`);
+  console.log(`v0 proxy running on port ${PORT}`);
 });
