@@ -6,8 +6,9 @@ api-keys:
 
 auth-dir: "/root/.cli-proxy-api"
 
-allow-remote-management: true
-management-key: "mgmt-123456789"
+remote-management:
+  allow-remote: true
+  secret-key: "mgmt-123456789"
 
 log:
   level: "info"
