@@ -2,13 +2,12 @@ host: "0.0.0.0"
 port: 8317
 
 api-keys:
-  - "sk-test888"
+  - "sk-你的CLIProxyAPI-key"
 
 auth-dir: "/root/.cli-proxy-api"
 
-management:
-  enabled: true
-  key: "mgmt-123456789"
+allow-remote-management: true
+management-key: "mgmt-123456789"
 
 log:
   level: "info"
