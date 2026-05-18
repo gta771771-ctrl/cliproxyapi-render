@@ -1,5 +1,3 @@
-FROM justsong/one-api:latest
+FROM ghcr.io/router-for-me/cli-proxy-api:latest
 
-EXPOSE 3000
-
-CMD ["--port", "3000", "--log-dir", "/data/logs"]
+EXPOSE 8317
