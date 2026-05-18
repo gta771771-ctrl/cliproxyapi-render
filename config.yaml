@@ -1,0 +1,10 @@
+host: "0.0.0.0"
+port: 8317
+
+api-keys:
+  - "sk-自己生成一个很长的key"
+
+auth-dir: "/root/.cli-proxy-api"
+
+log:
+  level: "info"
